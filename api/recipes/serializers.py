@@ -1,4 +1,8 @@
 import requests
+from django.core.validators import (
+    MinValueValidator,
+    MaxValueValidator,
+)
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.validators import ValidationError
@@ -13,15 +17,15 @@ class RecipeSerializer(serializers.ModelSerializer):
     )
     url = CustomMultiLookupHyperlink(
         view_name='recipe-detail',
-        lookup_kwarg_fields=('author__username', 'slug'),
+        lookup_kwarg_fields=('slug', 'id'),
         source='*',
         read_only=True,
     )
     ingredient_listing = CustomMultiLookupHyperlink(
         view_name='ingredient-list',
         lookup_kwarg_fields={
-            'recipe__author__username': 'author__username',
             'recipe__slug': 'slug',
+            'recipe__id': 'id',
         },
         source='*',
         read_only=True,
@@ -29,8 +33,8 @@ class RecipeSerializer(serializers.ModelSerializer):
     image_listing = CustomMultiLookupHyperlink(
         view_name='image-list',
         lookup_kwarg_fields={
-            'recipe__author__username': 'author__username',
             'recipe__slug': 'slug',
+            'recipe__id': 'id',
         },
         source='*',
         read_only=True,
@@ -38,8 +42,8 @@ class RecipeSerializer(serializers.ModelSerializer):
     step_listing = CustomMultiLookupHyperlink(
         view_name='step-list',
         lookup_kwarg_fields={
-            'recipe__author__username': 'author__username',
             'recipe__slug': 'slug',
+            'recipe__id': 'id',
         },
         source='*',
         read_only=True,
@@ -50,7 +54,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         fields = (
             'url',
             'author',
-            'slug',
             'title',
             'body',
             'views',
@@ -67,11 +70,20 @@ class RecipeSerializer(serializers.ModelSerializer):
         Validate if there's no more recipes of this author with this title
         """
         title = data['title']
-        user = self.context['request'].user
-        if models.Recipe.objects.filter(author=user, title=title).exists():
+        request = self.context['request']
+        user = request.user
+        id = request.parser_context['kwargs'].get('id')
+        same_author_title_recipes = models.Recipe.objects.filter(
+            author=user, title=title
+        )
+        if (
+            # Check whether recipes with the same title and author exist
+            # but this is not one of them
+            same_author_title_recipes.exists()
+            and not same_author_title_recipes.filter(id=id).exists()
+        ):
             raise ValidationError(
                 detail="Recipe with this title for this author already exists.",
-                code='recipe_already_exists',
             )
         return data
 
@@ -88,7 +100,7 @@ class RecipeChildSerializer(serializers.ModelSerializer):
 
     recipe = CustomMultiLookupHyperlink(
         view_name='recipe-detail',
-        lookup_kwarg_fields=('author__username', 'slug'),
+        lookup_kwarg_fields=('slug', 'id'),
         read_only=True,
     )
 
@@ -99,11 +111,10 @@ class RecipeChildSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if request:
             kwargs = request.parser_context['kwargs']
-            recipe_author_username = kwargs.get('recipe__author__username')
             recipe_slug = kwargs.get('recipe__slug')
-            return get_object_or_404(
-                models.Recipe, author__username=recipe_author_username, slug=recipe_slug
-            )
+            recipe_id = kwargs.get('recipe__id')
+            return get_object_or_404(models.Recipe, slug=recipe_slug, id=recipe_id)
+
 
     def create(self, validated_data):
         # Assign recipe based on url
@@ -116,7 +127,7 @@ class RecipeChildSerializer(serializers.ModelSerializer):
 class ImageSerializer(RecipeChildSerializer):
     url = CustomMultiLookupHyperlink(
         view_name='image-detail',
-        lookup_kwarg_fields=('recipe__author__username', 'recipe__slug', 'pk'),
+        lookup_kwarg_fields=('recipe__slug', 'recipe__id', 'pk'),
         source='*',
         read_only=True,
     )
@@ -143,7 +154,6 @@ class ImageSerializer(RecipeChildSerializer):
         ).exists():
             raise serializers.ValidationError(
                 detail="This image for this recipe was already uploaded.",
-                code='image_already_exists',
             )
 
         return data
@@ -152,14 +162,14 @@ class ImageSerializer(RecipeChildSerializer):
 class IngredientSerializer(RecipeChildSerializer):
     url = CustomMultiLookupHyperlink(
         view_name='ingredient-detail',
-        lookup_kwarg_fields=('recipe__author__username', 'recipe__slug', 'pk'),
+        lookup_kwarg_fields=('recipe__slug', 'recipe__id', 'pk'),
         source='*',
         read_only=True,
     )
 
     recipe = CustomMultiLookupHyperlink(
         view_name='recipe-detail',
-        lookup_kwarg_fields=('author__username', 'slug'),
+        lookup_kwarg_fields=('slug', 'id'),
         read_only=True,
     )
 
@@ -186,7 +196,7 @@ class IngredientSerializer(RecipeChildSerializer):
 class StepSerializer(RecipeChildSerializer):
     url = CustomMultiLookupHyperlink(
         view_name='step-detail',
-        lookup_kwarg_fields=('recipe__author__username', 'recipe__slug', 'pk'),
+        lookup_kwarg_fields=('recipe__slug', 'recipe__id', 'pk'),
         source='*',
         read_only=True,
     )
@@ -196,6 +206,12 @@ class StepSerializer(RecipeChildSerializer):
         fields = ('url', 'recipe', 'instruction', 'order')
 
 
+class StepOrderSerializer(serializers.Serializer):
+    order = serializers.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(20)]
+    )
+
+
 class TagSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(
         view_name='tag-detail', lookup_field='slug'
@@ -203,4 +219,4 @@ class TagSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Tag
-        fields = ('url', 'name', 'slug')
+        fields = ('url', 'name')

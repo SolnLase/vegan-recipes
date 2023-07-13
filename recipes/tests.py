@@ -61,7 +61,7 @@ class RecipeTestCase(TestCase):
             self.step.instruction, "Put all ingredients in a bowl and mix them."
         )
         self.assertEqual(self.step.order, 1)
-        self.assertEqual(self.step.__str__(), self.step.instruction[:100])
+        self.assertEqual(self.step.__str__(), f"{self.step.order}. {self.step.instruction[:100]} ({self.recipe})")
 
     def test_tag(self):
         self.assertEqual(

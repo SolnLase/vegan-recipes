@@ -2,8 +2,10 @@ from django.urls import path, include
 from . import views
 
 urlpatterns = [
-    path('auth/', include('rest_framework.urls')),
     path('register/', views.CreateUserView.as_view(), name='register-user'),
+    path('auth/get-auth-token/', views.GetAuthTokenView.as_view(), name='login-user'),
+    path('auth/remove-auth-token/', views.remove_auth_token, name='logout_user'),
+    path('auth/', include('rest_framework.urls')),
     path(
         'change-password/',
         views.ChangePasswordView.as_view(),
@@ -25,6 +27,11 @@ urlpatterns = [
         'confirm-email/<token>/',
         views.confirm_email,
         name='confirm-email',
+    ),
+    path(
+        '<username>/favourite-recipes/',
+        views.RetrieveUpdateFavouriteRecipes.as_view(),
+        name='favourite-recipes',
     ),
     path(
         '<username>/',

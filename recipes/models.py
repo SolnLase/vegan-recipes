@@ -7,12 +7,16 @@ from django.core.validators import (
     MaxValueValidator,
     StepValueValidator,
 )
+from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 
 
 class Recipe(models.Model):
     author = models.ForeignKey(
-        User, on_delete=models.SET_NULL, related_name='recipes', null=True
+        User,
+        on_delete=models.SET_NULL,
+        related_name='recipes',
+        null=True,
     )
     title = models.CharField(max_length=100)
     slug = models.SlugField(editable=False)
@@ -48,6 +52,9 @@ class Image(models.Model):
         return f"recipes/{instance.recipe.author.username}/{slugify(instance.recipe.title)}/{filename}"
 
     url = models.ImageField(upload_to=image_path, unique=True)
+    id = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True, primary_key=True
+    )
 
     class Meta:
         unique_together = (('recipe', 'unique_identifier'),)
@@ -101,19 +108,54 @@ class Step(models.Model):
         default=uuid.uuid4, editable=False, unique=True, primary_key=True
     )
 
-    def evaluate_step_order(self):
+    class Meta:
+        ordering = ('order',)
+        unique_together = (('recipe', 'instruction'),)
+
+    def evaluate_next_step_order(self):
         """
         New step's order
         """
         return self.recipe.steps.count() + 1
 
+    def change_order(self, new_order):
+        """
+        Change order with respect to other steps orders related to the same recipe
+        """
+        new_order = int(new_order)
+        recipe_steps = Step.objects.filter(recipe=self.recipe)
+
+        if new_order > recipe_steps.count():
+            raise ValidationError(
+                "New order can't be greater than the sum of all steps related to the same recipe"
+            )
+        if new_order < 0:
+            raise ValidationError("New order must be a positive integer")
+
+        old_order = self.order
+        self.order = new_order
+        self.save()
+
+        if old_order < new_order:
+            # Moving the step down, so adjust the order of steps in between
+            recipe_steps.filter(order__gt=old_order, order__lte=new_order).exclude(
+                pk=self.pk
+            ).update(order=models.F('order') - 1)
+        elif old_order > new_order:
+            # Moving the step up, so adjust the order of steps in between
+            recipe_steps.filter(order__gte=new_order, order__lt=old_order).exclude(
+                pk=self.pk
+            ).update(order=models.F('order') + 1)
+
     def save(self, *args, **kwargs):
         # Automatically assign step's order by one
-        self.order = self.evaluate_step_order()
+        is_created = not bool(Step.objects.filter(pk=self.pk))
+        if is_created:
+            self.order = self.evaluate_next_step_order()
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.instruction[:100]
+        return f"{self.order}. {self.instruction[:50]} ({self.recipe})"
 
 
 class Tag(models.Model):

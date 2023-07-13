@@ -40,8 +40,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
     'rest_framework',
+    'rest_framework.authtoken',
     'django_filters',
+    'drf_spectacular',
+    
     'recipes',
     'users',
 ]
@@ -154,6 +158,19 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 LOGIN_REDIRECT_URL = '/api/users'
+
+# SWAGGER
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': "Vegan Recipe API",
+    'DESCRIPTION': """This is API to CRUD vegan recipes, with validation 
+                        of created ingredients if they're vegan.""",
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    # OTHER SETTINGS
+}

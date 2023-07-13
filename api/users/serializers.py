@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from users.models import Profile
+from users import models
 from api.relations import CustomMultiLookupHyperlink
 from .validators import validate_email
 
@@ -14,20 +14,27 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         fields = ('username', 'email', 'password')
 
     def create(self, validated_data):
+        # Create profile and favouriteRecipes for this user
         password = validated_data.pop('password')
 
         user = User.objects.create(**validated_data)
         user.set_password(password)
         user.save()
 
-        Profile.objects.create(user=user)
+        models.Profile.objects.create(user=user)
+        models.FavouriteRecipes.objects.create(owner=user)
 
         return user
 
 
+class LoginUserSerializer(serializers.Serializer):
+    login_or_email = serializers.CharField()
+    password = serializers.CharField()
+
+
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Profile
+        model = models.Profile
         fields = ('bio', 'avatar')
 
 
@@ -40,11 +47,17 @@ class UserSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(
         view_name='user-detail', lookup_field='username'
     )
+    favourite_recipes = serializers.HyperlinkedRelatedField(
+        view_name='favourite-recipes',
+        lookup_field='owner',
+        lookup_url_kwarg='username',
+        read_only=True,
+    )
     profile = ProfileSerializer()
 
     class Meta:
         model = User
-        fields = ['url', 'username', 'email', 'profile']
+        fields = ['url', 'username', 'email', 'profile', 'favourite_recipes']
 
     def to_representation(self, instance):
         """
@@ -58,7 +71,7 @@ class UserSerializer(serializers.ModelSerializer):
 
         if instance != user:
             representation.pop('email')
-
+            representation.pop('favourite_recipes')
         return representation
 
 
@@ -70,18 +83,18 @@ class UserDetailSerializer(UserSerializer):
     email = serializers.EmailField(validators=[validate_email])
     recipes = CustomMultiLookupHyperlink(
         view_name='recipe-detail',
-        lookup_kwarg_fields=('author__username', 'slug'),
+        lookup_kwarg_fields=('slug', 'id'),
         many=True,
         read_only=True,
     )
 
     class Meta:
         model = User
-        fields = ('url', 'username', 'email', 'profile', 'recipes')
+        fields = ('url', 'username', 'email', 'profile', 'favourite_recipes', 'recipes')
 
     def update(self, instance, validated_data):
         profile_data = validated_data.pop('profile')
-        profile = Profile.objects.get(user=instance)
+        profile = models.Profile.objects.get(user=instance)
 
         instance.username = validated_data.get('username', instance.username)
         instance.email = validated_data.get('email', instance.email)
@@ -111,3 +124,19 @@ class NewPasswordSerializer(serializers.Serializer):
 
 class PasswordSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
+
+
+class FavouriteRecipesSerializer(serializers.ModelSerializer):
+    owner = serializers.HyperlinkedRelatedField(
+        view_name='user-detail', lookup_field='username', read_only=True
+    )
+    recipes = CustomMultiLookupHyperlink(
+        view_name='recipe-detail',
+        lookup_kwarg_fields=('slug', 'id'),
+        many=True,
+        queryset=models.Recipe.objects.all(),
+    )
+
+    class Meta:
+        model = models.FavouriteRecipes
+        fields = ('owner', 'recipes')

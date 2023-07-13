@@ -1,7 +1,10 @@
 from django.db.models import F
+from django.core.exceptions import ValidationError
 
-from rest_framework import viewsets, filters
+from rest_framework import viewsets, filters, status
+from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser
+from rest_framework.decorators import action
 
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -14,20 +17,20 @@ from api.mixins import MultipleFieldLookupMixin, MultipleFieldQuerysetMixin
 class RecipeViewSet(MultipleFieldLookupMixin, viewsets.ModelViewSet):
     serializer_class = serializers.RecipeSerializer
     queryset = models.Recipe.objects.all()
+    multiple_lookup_fields = ('slug', 'id')
     permission_classes = (
         IsAuthenticatedOrReadOnly,
         custom_permissions.IsOwnerOrReadOnly,
-        custom_permissions.IsEmailConfirmed,
+        custom_permissions.HasEmailConfirmed,
     )
-    multiple_lookup_fields = ('author__username', 'slug')
     filter_backends = (
         filters.SearchFilter,
         filters.OrderingFilter,
         DjangoFilterBackend,
     )
-    filterset_fields = ('tags',)
+    filterset_fields = ('tags', 'author__username', 'ingredients__name')
     search_fields = ('=author__username', 'title', 'ingredients__name', 'tags__name')
-    ordering_fields = ('created', 'views')
+    ordering_fields = ('created', 'modified', 'views')
 
     def retrieve(self, request, *args, **kwargs):
         # Increment the view count if the recipe belongs to a different author
@@ -42,19 +45,60 @@ class RecipeViewSet(MultipleFieldLookupMixin, viewsets.ModelViewSet):
 class ImageViewSet(MultipleFieldQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = serializers.ImageSerializer
     queryset = models.Image.objects.all()
-    queryset_fields = ('recipe__author__username', 'recipe__slug')
+    queryset_fields = ('recipe__slug', 'recipe__id', 'pk')
+    permission_classes = (
+        IsAuthenticatedOrReadOnly,
+        custom_permissions.IsRecipeOwnerOrReadOnly,
+        custom_permissions.HasEmailConfirmed,
+    )
 
 
 class IngredientViewSet(MultipleFieldQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = serializers.IngredientSerializer
     queryset = models.Ingredient.objects.all()
-    queryset_fields = ('recipe__author__username', 'recipe__slug')
+    queryset_fields = ('recipe__slug', 'recipe__id', 'pk')
+    permission_classes = (
+        IsAuthenticatedOrReadOnly,
+        custom_permissions.IsRecipeOwnerOrReadOnly,
+        custom_permissions.HasEmailConfirmed,
+    )
 
 
 class StepViewSet(MultipleFieldQuerysetMixin, viewsets.ModelViewSet):
-    serializer_class = serializers.StepSerializer
     queryset = models.Step.objects.all()
-    queryset_fields = ('recipe__author__username', 'recipe__slug')
+    queryset_fields = ('recipe__slug', 'recipe__id', 'pk')
+    permission_classes = (
+        IsAuthenticatedOrReadOnly,
+        custom_permissions.IsRecipeOwnerOrReadOnly,
+        custom_permissions.HasEmailConfirmed,
+    )
+
+    def get_serializer_class(self):
+        if self.action == 'change_order':
+            return serializers.StepOrderSerializer
+        else:
+            return serializers.StepSerializer
+
+    @action(detail=True, methods=['post'])
+    def change_order(
+        self,
+        request,
+        pk=None,
+        *args,
+        **kwargs,
+    ):
+        step = self.get_object()
+        new_order = request.data['order']
+
+        serializer = serializers.StepOrderSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            step.change_order(new_order)
+        except ValidationError as e:
+            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(serializer.data)
 
 
 class TagViewSet(viewsets.ModelViewSet):

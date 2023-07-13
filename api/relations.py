@@ -66,6 +66,8 @@ class CustomMultiLookupHyperlink(HyperlinkedRelatedField):
                 relational_fields = lookup_field.split('__')
                 related_obj_value = obj
                 for relational_field in relational_fields:
+                    if related_obj_value is None:
+                        break
                     related_obj_value = getattr(related_obj_value, relational_field)
                 lookup_value = related_obj_value
             else:

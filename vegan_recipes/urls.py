@@ -30,8 +30,8 @@ admin_path = os.environ.get('DJANGO_ADMIN_PATH')
 
 
 urlpatterns = [
+    # Less obvious name for admin path in production
     # path(f'{admin_path}/', admin.site.urls),
     path('admin/', admin.site.urls),
-    path('api/', include('api.recipes.urls')),
-    path('api/users/', include('api.users.urls')),
+    path('api/', include('api.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

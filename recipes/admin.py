@@ -1,8 +1,8 @@
 from django.contrib import admin
-from .models import Recipe, Image, Ingredient, Step, Tag
+from . import models 
 
-admin.site.register(Recipe)
-admin.site.register(Image)
-admin.site.register(Ingredient)
-admin.site.register(Step)
-admin.site.register(Tag)
+admin.site.register(models.Recipe)
+admin.site.register(models.Image)
+admin.site.register(models.Ingredient)
+admin.site.register(models.Step)
+admin.site.register(models.Tag)

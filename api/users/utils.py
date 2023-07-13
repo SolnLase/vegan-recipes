@@ -26,3 +26,11 @@ def check_password_strength(password):
         return "Moderate"
     else:
         return "Weak"
+
+
+def is_valid_email(email):
+    """
+    Regular expression pattern for email validation
+    """
+    pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+    return re.match(pattern, email) is not None

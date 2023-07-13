@@ -16,20 +16,22 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import APIException
+from rest_framework.authtoken.models import Token
 
 from . import serializers
-from .utils import check_password_strength
+from .utils import check_password_strength, is_valid_email
 
 from api.permissions import IsAccountOwner, IsNotAuthenticated
 from api.users.exceptions import PasswordsDoNotMatch, WrongToken, PasswordTooWeak
 from vegan_recipes.settings import EMAIL_HOST_USER
-from users.models import Profile
+from users import models
 
 
 class CreateUserView(generics.CreateAPIView):
     """
-    Registration form
+    Registers user, logs them with session auth, and sends message with email confirmation link
     """
+
     queryset = User.objects.all()
     serializer_class = serializers.UserRegisterSerializer
     permission_classes = [IsNotAuthenticated]
@@ -40,24 +42,52 @@ class CreateUserView(generics.CreateAPIView):
         user = authenticate(
             username=request.data['username'], password=request.data['password']
         )
-        login(request, user)
+        login(user, request)
+
+        token = Token.objects.create(user=user)
+
         # Url to send mail with email confirmation api
         url_path = reverse('send-mail-confirm-email')
         full_url = request.scheme + '://' + request.get_host() + url_path
 
-        session_id = request.session.session_key
         headers = {
-            'Cookie': f'sessionid={session_id}',
-            'X-CSRFToken': csrf.get_token(request),
+            'Authorization': f'Token {token}',
         }
         r = requests.get(full_url, headers=headers)
 
         return response
 
 
+class GetAuthTokenView(APIView):
+    """
+    Simple token authentication
+    """
+
+    serializer_class = serializers.LoginUserSerializer
+
+    def post(self, request, format=None):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        login_or_email = serializer.validated_data['login_or_email']
+        password = serializer.validated_data['password']
+
+        user = None
+        if is_valid_email(login_or_email):
+            user = authenticate(email=login_or_email, password=password)
+        else:
+            user = authenticate(username=login_or_email, password=password)
+
+        if user is not None:
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({'token': token.key})
+        else:
+            return Response({'error': 'Invalid credentials'}, status=401)
+
+
 class ListUserView(generics.ListAPIView):
-    queryset = User.objects.all()
     serializer_class = serializers.UserSerializer
+    queryset = User.objects.all()
     lookup_field = 'username'
 
 
@@ -65,7 +95,6 @@ class RetrieveUpdateDestroyUserView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = serializers.UserDetailSerializer
     queryset = User.objects.all()
     lookup_field = 'username'
-    lookup_url_kwarg = 'username'
 
     def get_permissions(self):
         """
@@ -82,6 +111,7 @@ class ChangePasswordView(APIView):
     """
     Change the current user's password by getting the current password and a new password
     """
+
     serializer_class = serializers.ChangePasswordSerializer
     permission_classes = [IsAuthenticated]
 
@@ -115,6 +145,7 @@ class ResetPasswordView(APIView):
     Sends a message with a link with the valid token on the user's email
     typed by them in the form
     """
+
     serializer_class = serializers.EmailSerializer
 
     def post(self, request, format=None):
@@ -159,9 +190,10 @@ class ResetPasswordView(APIView):
 
 class ResetPasswordComplete(APIView):
     """
-    Shows the form to enter new password after clicking the link sent on the email 
+    Shows the form to enter new password after clicking the link sent on the email
     of the user who forgot their password with the valid token
     """
+
     serializer_class = serializers.NewPasswordSerializer
 
     def post(self, request, token, format=None):
@@ -216,6 +248,19 @@ class CheckPasswordStrength(APIView):
         )
 
 
+class RetrieveUpdateFavouriteRecipes(generics.RetrieveUpdateAPIView):
+    serializer_class = serializers.FavouriteRecipesSerializer
+    queryset = models.FavouriteRecipes.objects.all()
+    lookup_field = 'owner__username'
+    lookup_url_kwarg = 'username'
+
+
+@api_view(['POST'])
+def remove_auth_token(request):
+    Token.objects.filter(user=request.user).delete()
+    return Response({'message': 'Logout successful'})
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def send_msg_confirm_email(request):
@@ -254,7 +299,7 @@ def send_msg_confirm_email(request):
 @api_view(['GET'])
 def confirm_email(request, token):
     """
-    Confirm user's password just by clicking the link sent with the previous view    
+    Confirm user's password just by clicking the link sent with the previous view
     """
     if not cache.get(token):
         raise WrongToken()
