@@ -44,7 +44,61 @@ class Recipe(models.Model):
         return self.title
 
 
-class Image(models.Model):
+class Order(models.Model):
+    """
+    Abstract model containing order field and methods returning new step's order
+    and for changing its order respectively
+    """
+    order = models.PositiveIntegerField(
+        editable=False,
+        validators=[MinValueValidator(1), MaxValueValidator(20), StepValueValidator(1)],
+        null=True
+    )
+
+    class Meta:
+        abstract = True
+
+    def evaluate_next_step_order(self):
+        """
+        Returns the order for the next step in the recipe related object
+        """
+
+        return self.recipe.steps.count() + 1
+
+    def change_order(self, new_order):
+        """
+        Changes the order of the step and adjusts the order of other steps accordingly
+        """
+
+        recipe_related_class = type(self)
+
+        new_order = int(new_order)
+        queryset = recipe_related_class.objects.filter(recipe=self.recipe)
+
+        if new_order > queryset.count():
+            raise ValidationError(
+                "New order can't be greater than the sum of all steps related to the same recipe"
+            )
+        if new_order < 0:
+            raise ValidationError("New order must be a positive integer")
+
+        old_order = self.order
+        self.order = new_order
+        self.save()
+
+        if old_order < new_order:
+            # Moving the step down, so adjust the order of steps in between
+            queryset.filter(order__gt=old_order, order__lte=new_order).exclude(
+                pk=self.pk
+            ).update(order=models.F('order') - 1)
+        elif old_order > new_order:
+            # Moving the step up, so adjust the order of steps in between
+            queryset.filter(order__gte=new_order, order__lt=old_order).exclude(
+                pk=self.pk
+            ).update(order=models.F('order') + 1)
+
+
+class Image(Order):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='images')
     unique_identifier = models.CharField(max_length=100, editable=False)
 
@@ -60,6 +114,9 @@ class Image(models.Model):
         unique_together = (('recipe', 'unique_identifier'),)
 
     def save(self, *args, **kwargs):
+        is_created = not bool(Image.objects.filter(pk=self.pk))
+        if is_created:
+            self.order = self.evaluate_next_step_order()
         self.unique_identifier = generate_unique_identifier(self.url)
         super().save(*args, **kwargs)
 
@@ -96,14 +153,10 @@ class Ingredient(models.Model):
         return self.name
 
 
-class Step(models.Model):
+class Step(Order):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='steps')
     instruction = models.TextField(max_length=500)
-    # Max 20 steps are allowed, and can be only add by one
-    order = models.PositiveIntegerField(
-        editable=False,
-        validators=[MinValueValidator(1), MaxValueValidator(20), StepValueValidator(1)],
-    )
+
     id = models.UUIDField(
         default=uuid.uuid4, editable=False, unique=True, primary_key=True
     )
@@ -111,41 +164,6 @@ class Step(models.Model):
     class Meta:
         ordering = ('order',)
         unique_together = (('recipe', 'instruction'),)
-
-    def evaluate_next_step_order(self):
-        """
-        New step's order
-        """
-        return self.recipe.steps.count() + 1
-
-    def change_order(self, new_order):
-        """
-        Change order with respect to other steps orders related to the same recipe
-        """
-        new_order = int(new_order)
-        recipe_steps = Step.objects.filter(recipe=self.recipe)
-
-        if new_order > recipe_steps.count():
-            raise ValidationError(
-                "New order can't be greater than the sum of all steps related to the same recipe"
-            )
-        if new_order < 0:
-            raise ValidationError("New order must be a positive integer")
-
-        old_order = self.order
-        self.order = new_order
-        self.save()
-
-        if old_order < new_order:
-            # Moving the step down, so adjust the order of steps in between
-            recipe_steps.filter(order__gt=old_order, order__lte=new_order).exclude(
-                pk=self.pk
-            ).update(order=models.F('order') - 1)
-        elif old_order > new_order:
-            # Moving the step up, so adjust the order of steps in between
-            recipe_steps.filter(order__gte=new_order, order__lt=old_order).exclude(
-                pk=self.pk
-            ).update(order=models.F('order') + 1)
 
     def save(self, *args, **kwargs):
         # Automatically assign step's order by one

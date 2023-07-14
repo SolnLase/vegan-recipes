@@ -139,6 +139,7 @@ class ImageSerializer(RecipeChildSerializer):
             'url',
             'recipe',
             'image_url',
+            'order'
         )
 
     def validate(self, data):
