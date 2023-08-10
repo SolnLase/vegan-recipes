@@ -11,11 +11,11 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password')
+        fields = ("username", "email", "password")
 
     def create(self, validated_data):
         # Create profile and favouriteRecipes for this user
-        password = validated_data.pop('password')
+        password = validated_data.pop("password")
 
         user = User.objects.create(**validated_data)
         user.set_password(password)
@@ -35,7 +35,7 @@ class LoginUserSerializer(serializers.Serializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Profile
-        fields = ('bio', 'avatar')
+        fields = ("bio", "avatar")
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -45,19 +45,19 @@ class UserSerializer(serializers.ModelSerializer):
     """
 
     url = serializers.HyperlinkedIdentityField(
-        view_name='user-detail', lookup_field='username'
+        view_name="user-detail", lookup_field="username"
     )
     favourite_recipes = serializers.HyperlinkedRelatedField(
-        view_name='favourite-recipes',
-        lookup_field='owner',
-        lookup_url_kwarg='username',
+        view_name="favourite-recipes",
+        lookup_field="owner",
+        lookup_url_kwarg="username",
         read_only=True,
     )
     profile = ProfileSerializer()
 
     class Meta:
         model = User
-        fields = ['url', 'username', 'email', 'profile', 'favourite_recipes']
+        fields = ["url", "username", "email", "profile", "favourite_recipes"]
 
     def to_representation(self, instance):
         """
@@ -67,11 +67,11 @@ class UserSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
 
         # Check if the user making the request is the owner of the object
-        user = self.context['request'].user
+        user = self.context["request"].user
 
         if instance != user:
-            representation.pop('email')
-            representation.pop('favourite_recipes')
+            representation.pop("email")
+            representation.pop("favourite_recipes")
         return representation
 
 
@@ -82,26 +82,26 @@ class UserDetailSerializer(UserSerializer):
 
     email = serializers.EmailField(validators=[validate_email])
     recipes = CustomMultiLookupHyperlink(
-        view_name='recipe-detail',
-        lookup_kwarg_fields=('slug', 'id'),
+        view_name="recipe-detail",
+        lookup_kwarg_fields=("slug", "id"),
         many=True,
         read_only=True,
     )
 
     class Meta:
         model = User
-        fields = ('url', 'username', 'email', 'profile', 'favourite_recipes', 'recipes')
+        fields = ("url", "username", "email", "profile", "favourite_recipes", "recipes")
 
     def update(self, instance, validated_data):
-        profile_data = validated_data.pop('profile')
+        profile_data = validated_data.pop("profile")
         profile = models.Profile.objects.get(user=instance)
 
-        instance.username = validated_data.get('username', instance.username)
-        instance.email = validated_data.get('email', instance.email)
+        instance.username = validated_data.get("username", instance.username)
+        instance.email = validated_data.get("email", instance.email)
         instance.save()
 
-        profile.bio = profile_data.get('bio', profile.bio)
-        profile.avatar = profile_data.get('avatar', profile.avatar)
+        profile.bio = profile_data.get("bio", profile.bio)
+        profile.avatar = profile_data.get("avatar", profile.avatar)
         profile.save()
 
         return instance
@@ -128,15 +128,15 @@ class PasswordSerializer(serializers.Serializer):
 
 class FavouriteRecipesSerializer(serializers.ModelSerializer):
     owner = serializers.HyperlinkedRelatedField(
-        view_name='user-detail', lookup_field='username', read_only=True
+        view_name="user-detail", lookup_field="username", read_only=True
     )
     recipes = CustomMultiLookupHyperlink(
-        view_name='recipe-detail',
-        lookup_kwarg_fields=('slug', 'id'),
+        view_name="recipe-detail",
+        lookup_kwarg_fields=("slug", "id"),
         many=True,
         queryset=models.Recipe.objects.all(),
     )
 
     class Meta:
         model = models.FavouriteRecipes
-        fields = ('owner', 'recipes')
+        fields = ("owner", "recipes")

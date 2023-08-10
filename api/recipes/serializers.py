@@ -63,6 +63,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             'tags',
             'created',
             'modified',
+            'id',
         )
 
     def validate(self, data):
@@ -106,7 +107,7 @@ class RecipeChildSerializer(serializers.ModelSerializer):
 
     def get_recipe(self):
         """
-        Get the current recipe
+        Get the current recipe based on it's slug and id
         """
         request = self.context.get('request')
         if request:
@@ -114,7 +115,6 @@ class RecipeChildSerializer(serializers.ModelSerializer):
             recipe_slug = kwargs.get('recipe__slug')
             recipe_id = kwargs.get('recipe__id')
             return get_object_or_404(models.Recipe, slug=recipe_slug, id=recipe_id)
-
 
     def create(self, validated_data):
         # Assign recipe based on url
@@ -135,12 +135,7 @@ class ImageSerializer(RecipeChildSerializer):
 
     class Meta:
         model = models.Image
-        fields = (
-            'url',
-            'recipe',
-            'image_url',
-            'order'
-        )
+        fields = ('url', 'recipe', 'image_url', 'order')
 
     def validate(self, data):
         """
@@ -176,7 +171,7 @@ class IngredientSerializer(RecipeChildSerializer):
 
     class Meta:
         model = models.Ingredient
-        fields = ('url', 'recipe', 'name', 'quantity', 'unit')
+        fields = ('url', 'recipe', 'name', 'quantity', 'unit', 'additional_informations')
 
     def validate_name(self, value):
         """

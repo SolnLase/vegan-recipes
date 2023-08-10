@@ -15,7 +15,7 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
-        related_name='recipes',
+        related_name="recipes",
         null=True,
     )
     title = models.CharField(max_length=100)
@@ -30,9 +30,9 @@ class Recipe(models.Model):
 
     class Meta:
         # Ordering by the creation from the latest to the oldest
-        ordering = ('-created',)
+        ordering = ("-created",)
         # Titles for recipes created by one author must be unique
-        unique_together = (('author', 'title'), ('author', 'slug'))
+        unique_together = (("author", "title"), ("author", "slug"))
 
     def save(self, *args, **kwargs):
         # Create slug
@@ -46,34 +46,36 @@ class Recipe(models.Model):
 
 class Order(models.Model):
     """
-    Abstract model containing order field and methods returning new step's order
+    Abstract model containing order field and methods returning new object's order
     and for changing its order respectively
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.object_model = type(self)
+
     order = models.PositiveIntegerField(
         editable=False,
         validators=[MinValueValidator(1), MaxValueValidator(20), StepValueValidator(1)],
-        null=True
+        null=True,
     )
 
     class Meta:
         abstract = True
 
-    def evaluate_next_step_order(self):
+    def evaluate_next_object_order(self):
         """
-        Returns the order for the next step in the recipe related object
+        Returns the order for the next object in the recipe related object
         """
-
-        return self.recipe.steps.count() + 1
+        pass
 
     def change_order(self, new_order):
         """
-        Changes the order of the step and adjusts the order of other steps accordingly
+        Changes the order of the object and adjusts the order of other steps accordingly
         """
 
-        recipe_related_class = type(self)
-
         new_order = int(new_order)
-        queryset = recipe_related_class.objects.filter(recipe=self.recipe)
+        queryset = self.object_model.objects.filter(recipe=self.recipe)
 
         if new_order > queryset.count():
             raise ValidationError(
@@ -90,16 +92,16 @@ class Order(models.Model):
             # Moving the step down, so adjust the order of steps in between
             queryset.filter(order__gt=old_order, order__lte=new_order).exclude(
                 pk=self.pk
-            ).update(order=models.F('order') - 1)
+            ).update(order=models.F("order") - 1)
         elif old_order > new_order:
             # Moving the step up, so adjust the order of steps in between
             queryset.filter(order__gte=new_order, order__lt=old_order).exclude(
                 pk=self.pk
-            ).update(order=models.F('order') + 1)
+            ).update(order=models.F("order") + 1)
 
 
 class Image(Order):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='images')
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="images")
     unique_identifier = models.CharField(max_length=100, editable=False)
 
     def image_path(instance, filename):
@@ -111,12 +113,15 @@ class Image(Order):
     )
 
     class Meta:
-        unique_together = (('recipe', 'unique_identifier'),)
+        unique_together = (("recipe", "unique_identifier"),)
+
+    def evaluate_next_image_order(self):
+        return self.recipe.images.count() + 1
 
     def save(self, *args, **kwargs):
         is_created = not bool(Image.objects.filter(pk=self.pk))
         if is_created:
-            self.order = self.evaluate_next_step_order()
+            self.order = self.evaluate_next_image_order()
         self.unique_identifier = generate_unique_identifier(self.url)
         super().save(*args, **kwargs)
 
@@ -126,25 +131,26 @@ class Image(Order):
 
 class Ingredient(models.Model):
     UNIT_CHOICES = (
-        ('g', 'grams'),
-        ('kg', 'kilograms'),
-        ('mg', 'milligrams'),
-        ('oz', 'ounces'),
-        ('lb', 'pounds'),
-        ('cup', 'cups'),
-        ('tsp', 'teaspoons'),
-        ('tbsp', 'tablespoons'),
-        ('ml', 'milliliters'),
-        ('l', 'liters'),
-        ('piece', 'pieces'),
+        ("g", "grams"),
+        ("kg", "kilograms"),
+        ("mg", "milligrams"),
+        ("oz", "ounces"),
+        ("lb", "pounds"),
+        ("cup", "cups"),
+        ("tsp", "teaspoons"),
+        ("tbsp", "tablespoons"),
+        ("ml", "milliliters"),
+        ("l", "liters"),
+        ("piece", "pieces"),
     )
 
     recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, related_name='ingredients'
+        Recipe, on_delete=models.CASCADE, related_name="ingredients"
     )
     name = models.CharField(max_length=50)
-    quantity = models.FloatField()
-    unit = models.CharField(max_length=20, choices=UNIT_CHOICES)
+    quantity = models.FloatField(null=True, blank=True)
+    unit = models.CharField(max_length=20, choices=UNIT_CHOICES, null=True, blank=True)
+    additional_informations = models.CharField(max_length=100, null=True, blank=True)
     id = models.UUIDField(
         default=uuid.uuid4, editable=False, unique=True, primary_key=True
     )
@@ -154,16 +160,19 @@ class Ingredient(models.Model):
 
 
 class Step(Order):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='steps')
-    instruction = models.TextField(max_length=500)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="steps")
+    instruction = models.TextField(max_length=1000)
 
     id = models.UUIDField(
         default=uuid.uuid4, editable=False, unique=True, primary_key=True
     )
 
     class Meta:
-        ordering = ('order',)
-        unique_together = (('recipe', 'instruction'),)
+        ordering = ("order",)
+        unique_together = (("recipe", "instruction"),)
+
+    def evaluate_next_step_order(self):
+        return self.recipe.steps.count() + 1
 
     def save(self, *args, **kwargs):
         # Automatically assign step's order by one
@@ -177,12 +186,12 @@ class Step(Order):
 
 
 class Tag(models.Model):
-    recipes = models.ManyToManyField(Recipe, related_name='tags', blank=True)
+    recipes = models.ManyToManyField(Recipe, related_name="tags", blank=True)
     name = models.CharField(max_length=75, unique=True)
     slug = models.SlugField(editable=False, unique=True, primary_key=True)
 
     class Meta:
-        ordering = ('-name',)
+        ordering = ("name",)
 
     def save(self, *args, **kwargs):
         # Create slug

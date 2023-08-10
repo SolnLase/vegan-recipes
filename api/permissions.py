@@ -42,7 +42,7 @@ class IsRecipeOwnerOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
 
-        recipe_id = view.kwargs.get('recipe__id')
+        recipe_id = view.kwargs.get("recipe__id")
         recipe = get_object_or_404(Recipe, id=recipe_id)
 
         return recipe.author == request.user
