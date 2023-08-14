@@ -68,7 +68,8 @@ class UserSerializer(serializers.ModelSerializer):
 
         # Check if the user making the request is the owner of the object
         user = self.context["request"].user
-
+        
+        print(representation)
         if instance != user:
             representation.pop("email")
             representation.pop("favourite_recipes")
