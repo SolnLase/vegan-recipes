@@ -22,7 +22,7 @@ from drf_spectacular.utils import extend_schema
 
 from api.permissions import IsAccountOwner, IsNotAuthenticated
 from api.users.exceptions import PasswordsDoNotMatch, WrongToken, PasswordTooWeak
-from vegan_recipes.settings import EMAIL_HOST_USER
+from your_vegan_recipe.settings import EMAIL_HOST_USER
 from users import models
 
 
