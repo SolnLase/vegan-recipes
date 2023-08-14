@@ -22,7 +22,7 @@ class Profile(models.Model):
 
 class FavouriteRecipes(models.Model):
     owner = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name='favouFrite_recipes'
+        User, on_delete=models.CASCADE, related_name='favourite_recipes'
     )
     recipes = models.ManyToManyField(Recipe, blank=True)
 
