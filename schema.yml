@@ -1,0 +1,2169 @@
+openapi: 3.0.3
+info:
+  title: Vegan Recipe API
+  version: 1.0.0
+  description: You can view, create, update, delete vegan recipes with this API. It
+    also includes JWT for requests from different origins, and session based authentication
+    for requests with the app. The app has simple validation of ingredient names for
+    vegan ingredient names.
+paths:
+  /api/recipes/:
+    get:
+      operationId: api_recipes_list
+      description: List all recipes in the app based on filters and ordering or retrieve
+        the specific recipeor get the current recipe
+      parameters:
+      - in: query
+        name: author__username
+        schema:
+          type: string
+      - in: query
+        name: ingredients__name
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: tags
+        schema:
+          type: array
+          items:
+            type: string
+        explode: true
+        style: form
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recipe'
+          description: ''
+    post:
+      operationId: api_recipes_create
+      description: Publish new recipe (authentication required)
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recipe'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Recipe'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Recipe'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+          description: ''
+  /api/recipes/{recipe__slug}-{recipe__id}/images/:
+    get:
+      operationId: api_recipes___images_list
+      description: Get all images for the specific recipe
+      parameters:
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Image'
+          description: ''
+    post:
+      operationId: api_recipes___images_create
+      description: Add new image to the recipe
+      parameters:
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Image'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Image'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Image'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+          description: ''
+  /api/recipes/{recipe__slug}-{recipe__id}/images/{id}/:
+    get:
+      operationId: api_recipes___images_retrieve
+      description: Get all images for the specific recipe
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+          description: ''
+    put:
+      operationId: api_recipes___images_update
+      description: Update the image object
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Image'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Image'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Image'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+          description: ''
+    patch:
+      operationId: api_recipes___images_partial_update
+      description: Update the image object
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedImage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedImage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedImage'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+          description: ''
+    delete:
+      operationId: api_recipes___images_destroy
+      description: Delete the image
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/recipes/{recipe__slug}-{recipe__id}/ingredients/:
+    get:
+      operationId: api_recipes___ingredients_list
+      description: Get all ingredients for the specific recipe
+      parameters:
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ingredient'
+          description: ''
+    post:
+      operationId: api_recipes___ingredients_create
+      description: Add new ingredient to the recipe
+      parameters:
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ingredient'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Ingredient'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Ingredient'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ingredient'
+          description: ''
+  /api/recipes/{recipe__slug}-{recipe__id}/ingredients/{id}/:
+    get:
+      operationId: api_recipes___ingredients_retrieve
+      description: Get all ingredients for the specific recipe
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ingredient'
+          description: ''
+    put:
+      operationId: api_recipes___ingredients_update
+      description: Update the ingredient
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ingredient'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Ingredient'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Ingredient'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ingredient'
+          description: ''
+    patch:
+      operationId: api_recipes___ingredients_partial_update
+      description: Update the ingredient
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedIngredient'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedIngredient'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedIngredient'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ingredient'
+          description: ''
+    delete:
+      operationId: api_recipes___ingredients_destroy
+      description: Delete the ingredient
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/recipes/{recipe__slug}-{recipe__id}/steps/:
+    get:
+      operationId: api_recipes___steps_list
+      description: Get all steps for the specific recipe
+      parameters:
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Step'
+          description: ''
+    post:
+      operationId: api_recipes___steps_create
+      description: Add new step to the recipe
+      parameters:
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Step'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Step'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Step'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Step'
+          description: ''
+  /api/recipes/{recipe__slug}-{recipe__id}/steps/{id}/:
+    get:
+      operationId: api_recipes___steps_retrieve
+      description: Get all steps for the specific recipe
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Step'
+          description: ''
+    put:
+      operationId: api_recipes___steps_update
+      description: Update the step
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Step'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Step'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Step'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Step'
+          description: ''
+    patch:
+      operationId: api_recipes___steps_partial_update
+      description: Update the step
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStep'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStep'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStep'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Step'
+          description: ''
+    delete:
+      operationId: api_recipes___steps_destroy
+      description: Delete the step
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/recipes/{recipe__slug}-{recipe__id}/steps/{id}/change-order/:
+    post:
+      operationId: api_recipes___steps_change_order_create
+      description: Add new step to the recipe
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: recipe__slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StepOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StepOrder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StepOrder'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepOrder'
+          description: ''
+  /api/recipes/{slug}-{id}/:
+    get:
+      operationId: api_recipes___retrieve
+      description: List all recipes in the app based on filters and ordering or retrieve
+        the specific recipeor get the current recipe
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+          description: ''
+    put:
+      operationId: api_recipes___update
+      description: Get object based on multiple url kwargs
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recipe'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Recipe'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Recipe'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+          description: ''
+    patch:
+      operationId: api_recipes___partial_update
+      description: Update the recipe (must be the author of the recipe)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRecipe'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRecipe'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRecipe'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+          description: ''
+    delete:
+      operationId: api_recipes___destroy
+      description: Delete the recipe (must be the author of the recipe)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/recipes/tags/:
+    get:
+      operationId: api_recipes_tags_list
+      description: List all tags in the app based on filters and ordering or retrieve
+        the specific tag
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+          description: ''
+    post:
+      operationId: api_recipes_tags_create
+      description: Publish new tag (must be staff user)
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tag'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Tag'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Tag'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+          description: ''
+  /api/recipes/tags/{slug}/:
+    get:
+      operationId: api_recipes_tags_retrieve
+      description: List all tags in the app based on filters and ordering or retrieve
+        the specific tag
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        description: A unique value identifying this tag.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+          description: ''
+    put:
+      operationId: api_recipes_tags_update
+      description: Update the tag (must be staff user)
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        description: A unique value identifying this tag.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tag'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Tag'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Tag'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+          description: ''
+    patch:
+      operationId: api_recipes_tags_partial_update
+      description: Update the tag (must be staff user)
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        description: A unique value identifying this tag.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTag'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTag'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTag'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+          description: ''
+    delete:
+      operationId: api_recipes_tags_destroy
+      description: Delete the tag (must be staff user)
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        description: A unique value identifying this tag.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/token/:
+    post:
+      operationId: api_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/token/refresh/:
+    post:
+      operationId: api_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/token/verify/:
+    post:
+      operationId: api_token_verify_create
+      description: |-
+        Takes a token and indicates if it is valid.  This view provides no
+        information about a token's fitness for a particular use.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenVerify'
+          description: ''
+  /api/users/:
+    get:
+      operationId: List all users
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+          description: ''
+  /api/users/{username}/:
+    get:
+      operationId: api_users_retrieve
+      description: Get specific user
+      parameters:
+      - in: path
+        name: username
+        schema:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+          description: ''
+    put:
+      operationId: api_users_update
+      description: Update the account (must be owner)
+      parameters:
+      - in: path
+        name: username
+        schema:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserDetail'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+          description: ''
+    patch:
+      operationId: api_users_partial_update
+      description: Update the account (must be owner)
+      parameters:
+      - in: path
+        name: username
+        schema:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserDetail'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+          description: ''
+    delete:
+      operationId: api_users_destroy
+      description: Delete the account (must be owner
+      parameters:
+      - in: path
+        name: username
+        schema:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/users/{username}/favourite-recipes/:
+    get:
+      operationId: api_users_favourite_recipes_retrieve
+      description: Get the list of your favourite recipes
+      parameters:
+      - in: path
+        name: username
+        schema:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavouriteRecipes'
+          description: ''
+    put:
+      operationId: api_users_favourite_recipes_update
+      parameters:
+      - in: path
+        name: username
+        schema:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FavouriteRecipes'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FavouriteRecipes'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FavouriteRecipes'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavouriteRecipes'
+          description: ''
+    patch:
+      operationId: api_users_favourite_recipes_partial_update
+      parameters:
+      - in: path
+        name: username
+        schema:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFavouriteRecipes'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFavouriteRecipes'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFavouriteRecipes'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavouriteRecipes'
+          description: ''
+  /api/users/change-password/:
+    post:
+      operationId: api_users_change_password_create
+      description: Change your password, old password is required
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangePassword'
+          description: ''
+  /api/users/check-if-user-is-loggedin:
+    get:
+      operationId: api_users_check_if_user_is_loggedin_retrieve
+      description: Check if the user is authenticated, and return appropriate response
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/users/check-password-strength/:
+    post:
+      operationId: Check how strong the password is (created mainly for web pages
+        checking the password strength before posting it)
+      description: |-
+        View constructed for checking password strength in real time,
+        e.g. while typing
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Password'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Password'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Password'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Password'
+          description: ''
+  /api/users/confirm-email/{token}/:
+    get:
+      operationId: api_users_confirm_email_retrieve
+      description: Confirm user's password with token sent with send-msg-confirm-email
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/users/register/:
+    post:
+      operationId: api_users_register_create
+      description: Register new user
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRegister'
+          description: ''
+  /api/users/reset-password/:
+    post:
+      operationId: api_users_reset_password_create
+      description: Get link with token to reset the password in the next step
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Email'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Email'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Email'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Email'
+          description: ''
+  /api/users/reset-password-complete/{token}/:
+    post:
+      operationId: api_users_reset_password_complete_create
+      description: Complete the process of resetting your password by giving a new
+        one
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewPassword'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NewPassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NewPassword'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewPassword'
+          description: ''
+  /api/users/send-mail-confirm-email/:
+    get:
+      operationId: api_users_send_mail_confirm_email_retrieve
+      description: Send an email message with request of conforming it upon the registration
+        or if user lost it after registration or some bug occured
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+components:
+  schemas:
+    BlankEnum:
+      enum:
+      - ''
+    ChangePassword:
+      type: object
+      properties:
+        current_password:
+          type: string
+          writeOnly: true
+        new_password:
+          type: string
+          writeOnly: true
+        repeat_new_password:
+          type: string
+          writeOnly: true
+      required:
+      - current_password
+      - new_password
+      - repeat_new_password
+    Email:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
+    FavouriteRecipes:
+      type: object
+      properties:
+        owner:
+          type: string
+          format: uri
+          readOnly: true
+        recipes:
+          type: array
+          items:
+            type: string
+            format: uri
+      required:
+      - owner
+      - recipes
+    Image:
+      type: object
+      description: Serializer for related models to recipe with ManyToOne relationship
+      properties:
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        recipe:
+          type: string
+          format: uri
+          readOnly: true
+        image_url:
+          type: string
+          format: uri
+        order:
+          type: integer
+          readOnly: true
+          nullable: true
+      required:
+      - image_url
+      - order
+      - recipe
+      - url
+    Ingredient:
+      type: object
+      description: Serializer for related models to recipe with ManyToOne relationship
+      properties:
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        recipe:
+          type: string
+          format: uri
+          readOnly: true
+        name:
+          type: string
+          maxLength: 50
+        quantity:
+          type: number
+          format: double
+          nullable: true
+        unit:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/UnitEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        additional_informations:
+          type: string
+          nullable: true
+          maxLength: 100
+      required:
+      - name
+      - recipe
+      - url
+    NewPassword:
+      type: object
+      properties:
+        new_password:
+          type: string
+          writeOnly: true
+        repeat_new_password:
+          type: string
+          writeOnly: true
+      required:
+      - new_password
+      - repeat_new_password
+    NullEnum:
+      enum:
+      - null
+    Password:
+      type: object
+      properties:
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
+    PatchedFavouriteRecipes:
+      type: object
+      properties:
+        owner:
+          type: string
+          format: uri
+          readOnly: true
+        recipes:
+          type: array
+          items:
+            type: string
+            format: uri
+    PatchedImage:
+      type: object
+      description: Serializer for related models to recipe with ManyToOne relationship
+      properties:
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        recipe:
+          type: string
+          format: uri
+          readOnly: true
+        image_url:
+          type: string
+          format: uri
+        order:
+          type: integer
+          readOnly: true
+          nullable: true
+    PatchedIngredient:
+      type: object
+      description: Serializer for related models to recipe with ManyToOne relationship
+      properties:
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        recipe:
+          type: string
+          format: uri
+          readOnly: true
+        name:
+          type: string
+          maxLength: 50
+        quantity:
+          type: number
+          format: double
+          nullable: true
+        unit:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/UnitEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        additional_informations:
+          type: string
+          nullable: true
+          maxLength: 100
+    PatchedRecipe:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        author:
+          type: string
+          format: uri
+          readOnly: true
+        title:
+          type: string
+          maxLength: 100
+        body:
+          type: string
+        views:
+          type: integer
+          readOnly: true
+        image_listing:
+          type: string
+          format: uri
+          readOnly: true
+        ingredient_listing:
+          type: string
+          format: uri
+          readOnly: true
+        step_listing:
+          type: string
+          format: uri
+          readOnly: true
+        tags:
+          type: array
+          items:
+            type: string
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+    PatchedStep:
+      type: object
+      description: Serializer for related models to recipe with ManyToOne relationship
+      properties:
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        recipe:
+          type: string
+          format: uri
+          readOnly: true
+        instruction:
+          type: string
+          maxLength: 1000
+        order:
+          type: integer
+          readOnly: true
+          nullable: true
+    PatchedTag:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        name:
+          type: string
+          maxLength: 75
+    PatchedUserDetail:
+      type: object
+      description: Serializer with a list of recipes to be loaded individually
+      properties:
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+        profile:
+          $ref: '#/components/schemas/Profile'
+        favourite_recipes:
+          type: string
+          format: uri
+          readOnly: true
+        recipes:
+          type: array
+          items:
+            type: string
+            format: uri
+          readOnly: true
+    Profile:
+      type: object
+      properties:
+        bio:
+          type: string
+          nullable: true
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+    Recipe:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        author:
+          type: string
+          format: uri
+          readOnly: true
+        title:
+          type: string
+          maxLength: 100
+        body:
+          type: string
+        views:
+          type: integer
+          readOnly: true
+        image_listing:
+          type: string
+          format: uri
+          readOnly: true
+        ingredient_listing:
+          type: string
+          format: uri
+          readOnly: true
+        step_listing:
+          type: string
+          format: uri
+          readOnly: true
+        tags:
+          type: array
+          items:
+            type: string
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+      required:
+      - author
+      - body
+      - created
+      - id
+      - image_listing
+      - ingredient_listing
+      - modified
+      - step_listing
+      - tags
+      - title
+      - url
+      - views
+    Step:
+      type: object
+      description: Serializer for related models to recipe with ManyToOne relationship
+      properties:
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        recipe:
+          type: string
+          format: uri
+          readOnly: true
+        instruction:
+          type: string
+          maxLength: 1000
+        order:
+          type: integer
+          readOnly: true
+          nullable: true
+      required:
+      - instruction
+      - order
+      - recipe
+      - url
+    StepOrder:
+      type: object
+      properties:
+        order:
+          type: integer
+          minimum: 1
+          maximum: 20
+      required:
+      - order
+    Tag:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        name:
+          type: string
+          maxLength: 75
+      required:
+      - name
+      - url
+    TokenObtainPair:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - password
+      - refresh
+      - username
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    TokenVerify:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+      required:
+      - token
+    UnitEnum:
+      enum:
+      - g
+      - kg
+      - mg
+      - oz
+      - lb
+      - cup
+      - tsp
+      - tbsp
+      - ml
+      - l
+      - piece
+      type: string
+      description: |-
+        * `g` - grams
+        * `kg` - kilograms
+        * `mg` - milligrams
+        * `oz` - ounces
+        * `lb` - pounds
+        * `cup` - cups
+        * `tsp` - teaspoons
+        * `tbsp` - tablespoons
+        * `ml` - milliliters
+        * `l` - liters
+        * `piece` - pieces
+    User:
+      type: object
+      description: |-
+        Serializer with only essential fields to decrease response size
+        and minimize database queries
+      properties:
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        profile:
+          $ref: '#/components/schemas/Profile'
+        favourite_recipes:
+          type: string
+          format: uri
+          readOnly: true
+      required:
+      - favourite_recipes
+      - profile
+      - url
+      - username
+    UserDetail:
+      type: object
+      description: Serializer with a list of recipes to be loaded individually
+      properties:
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+        profile:
+          $ref: '#/components/schemas/Profile'
+        favourite_recipes:
+          type: string
+          format: uri
+          readOnly: true
+        recipes:
+          type: array
+          items:
+            type: string
+            format: uri
+          readOnly: true
+      required:
+      - email
+      - favourite_recipes
+      - profile
+      - recipes
+      - url
+      - username
+    UserRegister:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - email
+      - password
+      - username
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

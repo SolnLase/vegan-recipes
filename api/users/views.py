@@ -3,7 +3,6 @@ import requests
 
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
-from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
@@ -14,10 +13,9 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.authtoken.models import Token
 
 from . import serializers
-from .utils import check_password_strength, is_valid_email
+from .utils import check_password_strength
 from drf_spectacular.utils import extend_schema
 
 from api.permissions import IsAccountOwner, IsNotAuthenticated
@@ -39,10 +37,25 @@ class CreateUserView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
 
+        token_url_path = reverse("token_obtain_pair")
+        full_token_url = request.scheme + "://" + request.get_host() + token_url_path
+
+        token_response = requests.post(
+            full_token_url,
+            data={
+                "username": request.data["username"],
+                "password": request.data["password"],
+            },
+        )
+        access_token = (
+            token_response.json()["access"] if token_response.status_code == 200 else None
+        )
+
         # Url to send mail with email confirmation api
         url_path = reverse("send-mail-confirm-email")
         full_url = request.scheme + "://" + request.get_host() + url_path
-        requests.get(full_url)
+
+        requests.get(full_url, headers={"Authorization": f"Bearer {access_token}"})
 
         return response
 
@@ -202,7 +215,7 @@ class ResetPasswordComplete(APIView):
 
 
 @extend_schema(
-    "Check how strong the password is (created mainly for web pages checking the password strength before posting it)"
+    description="Check how strong the password is (created mainly for web pages checking the password strength before posting it)"
 )
 class CheckPasswordStrength(APIView):
     """
