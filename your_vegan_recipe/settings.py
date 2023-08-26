@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["yourveganrecipe.com", "www.yourveganrecipe.com"]
 
@@ -206,6 +206,45 @@ CSRF_TRUSTED_ORIGINS = [
     "https://yourveganrecipe.com",
     "https://www.yourveganrecipe.com",
 ]
+
+# Gunicorn logs
+# settings.py
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "custom_format": {
+            "format": "[{asctime}] {levelname} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console_default": {
+            "class": "logging.StreamHandler",
+        },
+        "console_custom": {
+            "class": "logging.StreamHandler",
+            "formatter": "custom_format",
+        },
+    },
+    "root": {
+        "handlers": ["console_custom"],
+        "level": "DEBUG",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console_custom"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "gunicorn": {
+            "handlers": ["console_default"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
 
 # SWAGGER UI
 

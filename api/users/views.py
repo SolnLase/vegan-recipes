@@ -1,5 +1,6 @@
 import uuid
 import requests
+import logging
 
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
@@ -23,6 +24,7 @@ from api.users.exceptions import PasswordsDoNotMatch, WrongToken, PasswordTooWea
 from your_vegan_recipe.settings import EMAIL_HOST_USER
 from users import models
 
+logging.basicConfig(level=logging.INFO)
 
 @extend_schema(description="Register new user")
 class CreateUserView(generics.CreateAPIView):
@@ -37,25 +39,30 @@ class CreateUserView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
 
-        token_url_path = reverse("token_obtain_pair")
-        full_token_url = request.scheme + "://" + request.get_host() + token_url_path
+        ### Undetermined bug
+        # token_url_path = reverse("token_obtain_pair")
+        # full_token_url = "https://" + request.get_host() + token_url_path
 
-        token_response = requests.post(
-            full_token_url,
-            data={
-                "username": request.data["username"],
-                "password": request.data["password"],
-            },
-        )
-        access_token = (
-            token_response.json()["access"] if token_response.status_code == 200 else None
-        )
+        # token_response = requests.post(
+        #     full_token_url,
+        #     data={
+        #         "username": request.data["username"],
+        #         "password": request.data["password"],
+        #     },
+        # )
+        # access_token = (
+        #     token_response.json()["access"] if token_response.status_code == 200 else None
+        # )
 
-        # Url to send mail with email confirmation api
-        url_path = reverse("send-mail-confirm-email")
-        full_url = request.scheme + "://" + request.get_host() + url_path
+        # # Url to send mail with email confirmation api
+        # url_path = reverse("send-mail-confirm-email")
+        # full_url = "https://" + request.get_host() + url_path
 
-        requests.get(full_url, headers={"Authorization": f"Bearer {access_token}"})
+        # requests.get(full_url, headers={"Authorization": f"Bearer {access_token}"})
+
+        # # Log the response details after making the request
+        # logging.info(f"Response status code: {response.status_code}")
+        # logging.info(f"Response content: {response.text}")
 
         return response
 
